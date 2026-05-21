@@ -67,7 +67,7 @@ export const FileShare: React.FC<FileShareProps> = ({ value, onChange }) => {
   return (
     <div className="file-uploader-container">
       {!value ? (
-        <div>
+        <>
           <div
             className={`upload-dropzone ${isDragActive ? 'drag-active' : ''}`}
             onDragEnter={handleDrag}
@@ -107,7 +107,7 @@ export const FileShare: React.FC<FileShareProps> = ({ value, onChange }) => {
               <span>{error}</span>
             </div>
           )}
-        </div>
+        </>
       ) : (
         <div className="preview-container">
           {/* Image preview for image files */}

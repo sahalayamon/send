@@ -8,6 +8,7 @@ import ShareOutput from './components/ShareOutput';
 import PayloadViewer from './components/PayloadViewer';
 import { createTextShare, createFileShare, getShareByCode, isValidCode } from './lib/shares';
 import type { ShareRecord } from './lib/shares';
+import AdminButton from './components/AdminButton';
 
 // ── Routing: extract 6-char code from pathname ─────────────────────────────
 
@@ -196,10 +197,11 @@ export const App: React.FC = () => {
       <footer className="app-footer">
         <div className="footer-links">
           <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('Files uploaded to Supabase. Links expire after 1 hour. Nothing stored in the URL.'); }}>How it works</a>
-          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('Tempsend uses Supabase (PostgreSQL + Storage). Files deleted after expiry. No analytics.'); }}>Privacy & Tech</a>
+          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('AYMN.SEND. uses Supabase (PostgreSQL + Storage). Files deleted after expiry. No analytics.'); }}>Privacy & Tech</a>
         </div>
-        <p>© {new Date().getFullYear()} Tempsend — Links expire in 1h. Zero tracking.</p>
+        <p>© {new Date().getFullYear()} AYMN.SEND. — Links expire in 1h. Zero tracking.</p>
       </footer>
+      <AdminButton />
     </div>
   );
 };

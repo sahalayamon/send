@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { getCachedExpiryHours } from './admin';
 
 export const STORAGE_BUCKET = 'tempsend-files';
 export const EXPIRY_HOURS = 1;
@@ -72,21 +73,22 @@ export function formatFileSize(bytes: number): string {
 
 /** Try inserting with a unique code, retrying up to 5 times on collision. */
 async function insertWithCode(payload: Record<string, unknown>): Promise<ShareRecord> {
+  const expiryHours = await getCachedExpiryHours();
+  const expires_at = new Date(Date.now() + expiryHours * 3600 * 1000).toISOString();
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateCode();
     const { data, error } = await supabase
       .from('shares')
-      .insert({ ...payload, code })
+      .insert({ ...payload, code, expires_at })
       .select('*')
       .single();
 
     if (!error) return data as ShareRecord;
-
-    // Postgres unique constraint violation code
-    if (error.code === '23505') continue; // code collision, retry
+    if (error.code === '23505') continue;
     throw new Error(error.message);
   }
-  throw new Error('Failed to generate a unique share code after 5 attempts. Please try again.');
+  throw new Error('Failed to generate a unique share code. Please try again.');
 }
 
 /** Upload a text snippet to Supabase. Returns the full share record. */
