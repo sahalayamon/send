@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  X, Trash2, RefreshCw, ShieldAlert, Clock, FileText, File as FileIcon,
+  X, Trash2, RefreshCw, ShieldAlert, FileText, File as FileIcon,
   CheckCircle, AlertCircle, Settings, Zap
 } from 'lucide-react';
 import type { ShareRecord } from '../lib/shares';
