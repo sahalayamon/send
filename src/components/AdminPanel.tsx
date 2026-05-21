@@ -7,7 +7,7 @@ import type { ShareRecord } from '../lib/shares';
 import { formatFileSize } from '../lib/shares';
 import {
   fetchAllShares, deleteShare, purgeExpiredShares,
-  getAdminStats, getExpiryHours, setExpiryHours
+  getAdminStats, getExpiryHours, setExpiryHours, setAdminPassword, getAdminPassword
 } from '../lib/admin';
 
 interface AdminPanelProps {
@@ -30,6 +30,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
   const [purging, setPurging] = useState(false);
   const [expiryHours, setExpiryHoursState] = useState<number>(1);
   const [savingExpiry, setSavingExpiry] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPw, setSavingPw] = useState(false);
+  const [showPwModal, setShowPwModal] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
 
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
@@ -90,6 +95,33 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!oldPassword || !newPassword) return;
+    if (newPassword !== confirmPassword) {
+      showToast('New passwords do not match.', 'err');
+      return;
+    }
+    setSavingPw(true);
+    try {
+      const current = await getAdminPassword();
+      if (oldPassword !== current) {
+        showToast('Current password is incorrect.', 'err');
+        setOldPassword('');
+        return;
+      }
+      await setAdminPassword(newPassword);
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setShowPwModal(false);
+      showToast('Password updated. Use it on next login.');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to update password', 'err');
+    } finally {
+      setSavingPw(false);
+    }
+  };
+
   const stats = getAdminStats(shares);
   const now = new Date();
 
@@ -105,6 +137,15 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             <span className="admin-subtitle">// AYMN.SEND.</span>
           </div>
           <div className="admin-header-right">
+            <button
+              type="button"
+              className="admin-header-text-btn"
+              onClick={() => { setShowPwModal(true); setOldPassword(''); setNewPassword(''); setConfirmPassword(''); }}
+              title="Change admin password"
+              aria-label="Change admin password"
+            >
+              Change Password
+            </button>
             <button
               type="button"
               className="admin-icon-btn"
@@ -125,6 +166,59 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
             </button>
           </div>
         </div>
+
+        {/* Change Password Modal */}
+        {showPwModal && (
+          <div className="admin-login-overlay" onClick={() => setShowPwModal(false)}>
+            <div className="admin-login-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
+              <div className="admin-login-header">
+                <Settings size={13} />
+                <span>Change Password</span>
+                <button type="button" className="admin-icon-btn" onClick={() => setShowPwModal(false)} style={{ marginLeft: 'auto' }} aria-label="Close"><X size={13} /></button>
+              </div>
+              <div className="admin-login-form">
+                <label className="admin-login-label" htmlFor="admin-old-pw">Current password</label>
+                <input
+                  id="admin-old-pw"
+                  type="password"
+                  className="admin-pw-input"
+                  value={oldPassword}
+                  onChange={e => setOldPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  autoFocus
+                />
+                <label className="admin-login-label" htmlFor="admin-new-pw">New password</label>
+                <input
+                  id="admin-new-pw"
+                  type="password"
+                  className="admin-pw-input"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Min. 4 characters"
+                  autoFocus
+                />
+                <label className="admin-login-label" htmlFor="admin-confirm-pw">Confirm password</label>
+                <input
+                  id="admin-confirm-pw"
+                  type="password"
+                  className="admin-pw-input"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat new password"
+                  onKeyDown={e => e.key === 'Enter' && handleChangePassword()}
+                />
+                <button
+                  type="button"
+                  className="admin-login-submit"
+                  onClick={handleChangePassword}
+                  disabled={savingPw || !oldPassword || !newPassword || !confirmPassword}
+                >
+                  {savingPw ? '// Saving...' : '> Update Password'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Stats row */}
         <div className="admin-stats-row">

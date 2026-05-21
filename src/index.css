@@ -1439,6 +1439,31 @@ html, body {
   border-color: var(--border-focus);
 }
 
+.admin-header-text-btn {
+  background: transparent;
+  border: 1px solid var(--border-tag);
+  color: var(--text-secondary);
+  height: 28px;
+  padding: 0 0.65rem;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 0;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.admin-header-text-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-focus);
+  background: var(--bg-hover);
+}
+
 /* ── Stats row ────────────────────────────────────────────────────────────── */
 .admin-stats-row {
   display: flex;
