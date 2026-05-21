@@ -1,0 +1,21 @@
+/* Netlify — redirect all paths to index.html for SPA routing */
+/*           so /abc123 is served by React instead of 404ing  */
+/* 200 = rewrite (not redirect), client sees original URL     */
+/*                                                            */
+/* For Vercel: add vercel.json (see below)                    */
+/* For Apache: add .htaccess RewriteRule                      */
+
+/* ----------------------------------------------------------  */
+/*  Netlify                                                    */
+/* ----------------------------------------------------------  */
+/*  _redirects file must be in /public so Vite copies it      */
+/*  to dist/ on build.                                         */
+/* ----------------------------------------------------------  */
+
+/* Allow static assets to pass through first */
+/assets/*   /assets/:splat   200
+/*.svg       /:file.svg       200
+/*.ico       /:file.ico       200
+
+/* SPA fallback */
+/*              /index.html   200
