@@ -32,6 +32,8 @@ export const App: React.FC = () => {
   const [expiryOption, setExpiryOption] = useState<'5m' | '10m' | '15m' | '1h' | 'custom'>('1h');
   const [customExpiryValue, setCustomExpiryValue] = useState<number>(30);
   const [customExpiryUnit, setCustomExpiryUnit] = useState<'m' | 'h'>('m');
+  const [isAdmin, setIsAdmin] = useState(() => sessionStorage.getItem('aymnsend_admin') === '1');
+
 
   // Viewer Mode
   const [viewShare, setViewShare] = useState<ShareRecord | null>(null);
@@ -105,7 +107,7 @@ export const App: React.FC = () => {
 
     try {
       let record: ShareRecord;
-      const minutes = getExpiryMinutes();
+      const minutes = isAdmin ? getExpiryMinutes() : undefined;
       if (activeTab === 'text') {
         if (!textValue.trim()) return;
         record = await createTextShare(textValue, minutes);
@@ -285,76 +287,78 @@ export const App: React.FC = () => {
               )}
 
               {/* Expiry Lifetime Selector */}
-              <div className="expiry-section" style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
-                <span className="expiry-title-label" style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '0.75rem' }}>
-                  // Expiry Link Lifetime
-                </span>
-                <div className="expiry-options" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  {(['5m', '10m', '15m', '1h', 'custom'] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      className={`expiry-btn ${expiryOption === opt ? 'active' : ''}`}
-                      onClick={() => setExpiryOption(opt)}
-                      style={{
-                        background: expiryOption === opt ? 'var(--text-primary)' : 'transparent',
-                        color: expiryOption === opt ? 'var(--bg)' : 'var(--text-secondary)',
-                        border: '1px solid ' + (expiryOption === opt ? 'var(--text-primary)' : 'var(--border-tag)'),
-                        padding: '0.4rem 0.8rem',
-                        fontSize: '0.72rem',
-                        fontFamily: 'var(--font-mono)',
-                        textTransform: 'uppercase',
-                        cursor: 'pointer',
-                        letterSpacing: '0.06em',
-                        transition: 'all var(--transition)'
-                      }}
-                    >
-                      {opt === 'custom' ? 'Custom' : opt}
-                    </button>
-                  ))}
-                </div>
-
-                {expiryOption === 'custom' && (
-                  <div className="expiry-custom-row" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                    <input
-                      type="number"
-                      min={1}
-                      max={9999}
-                      value={customExpiryValue}
-                      onChange={(e) => setCustomExpiryValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                      className="expiry-custom-input"
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        background: 'var(--bg-inset)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.82rem',
-                        width: '80px',
-                        outline: 'none'
-                      }}
-                    />
-                    <select
-                      value={customExpiryUnit}
-                      onChange={(e) => setCustomExpiryUnit(e.target.value as 'm' | 'h')}
-                      className="expiry-custom-select"
-                      style={{
-                        padding: '0.5rem 0.75rem',
-                        background: 'var(--bg-card)',
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-primary)',
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.82rem',
-                        outline: 'none',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="m">Minutes</option>
-                      <option value="h">Hours</option>
-                    </select>
+              {isAdmin && (
+                <div className="expiry-section" style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+                  <span className="expiry-title-label" style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '0.75rem' }}>
+                    // Expiry Link Lifetime
+                  </span>
+                  <div className="expiry-options" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    {(['5m', '10m', '15m', '1h', 'custom'] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        className={`expiry-btn ${expiryOption === opt ? 'active' : ''}`}
+                        onClick={() => setExpiryOption(opt)}
+                        style={{
+                          background: expiryOption === opt ? 'var(--text-primary)' : 'transparent',
+                          color: expiryOption === opt ? 'var(--bg)' : 'var(--text-secondary)',
+                          border: '1px solid ' + (expiryOption === opt ? 'var(--text-primary)' : 'var(--border-tag)'),
+                          padding: '0.4rem 0.8rem',
+                          fontSize: '0.72rem',
+                          fontFamily: 'var(--font-mono)',
+                          textTransform: 'uppercase',
+                          cursor: 'pointer',
+                          letterSpacing: '0.06em',
+                          transition: 'all var(--transition)'
+                        }}
+                      >
+                        {opt === 'custom' ? 'Custom' : opt}
+                      </button>
+                    ))}
                   </div>
-                )}
-              </div>
+
+                  {expiryOption === 'custom' && (
+                    <div className="expiry-custom-row" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                      <input
+                        type="number"
+                        min={1}
+                        max={9999}
+                        value={customExpiryValue}
+                        onChange={(e) => setCustomExpiryValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                        className="expiry-custom-input"
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          background: 'var(--bg-inset)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-primary)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.82rem',
+                          width: '80px',
+                          outline: 'none'
+                        }}
+                      />
+                      <select
+                        value={customExpiryUnit}
+                        onChange={(e) => setCustomExpiryUnit(e.target.value as 'm' | 'h')}
+                        className="expiry-custom-select"
+                        style={{
+                          padding: '0.5rem 0.75rem',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-primary)',
+                          fontFamily: 'var(--font-mono)',
+                          fontSize: '0.82rem',
+                          outline: 'none',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="m">Minutes</option>
+                        <option value="h">Hours</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {uploadError && (
                 <div className="capacity-warning" style={{ marginTop: '1.25rem' }}>
@@ -392,7 +396,7 @@ export const App: React.FC = () => {
         </div>
         <p>© {new Date().getFullYear()} AymnSend — Links expire based on selected duration. Zero tracking.</p>
       </footer>
-      <AdminButton />
+      <AdminButton onLogin={() => setIsAdmin(true)} onLogout={() => setIsAdmin(false)} />
     </div>
   );
 };
