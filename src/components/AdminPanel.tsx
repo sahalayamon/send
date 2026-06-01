@@ -41,6 +41,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => 
   const [showPwModal, setShowPwModal] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
 
+  // Custom Global Expiry state
+  const [isCustom, setIsCustom] = useState(false);
+  const [customValue, setCustomValue] = useState<number>(30);
+  const [customUnit, setCustomUnit] = useState<'m' | 'h'>('m');
+
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 3000);
@@ -51,7 +56,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => 
     try {
       const [data, hours] = await Promise.all([fetchAllShares(), getExpiryHours()]);
       setShares(data);
-      setExpiryHoursState(hours);
+      
+      const matchedPreset = EXPIRY_OPTIONS.find(opt => Math.abs(opt.value - hours) < 0.0001);
+      if (matchedPreset) {
+        setExpiryHoursState(matchedPreset.value);
+        setIsCustom(false);
+      } else {
+        setIsCustom(true);
+        if (hours < 1 || hours % 1 !== 0) {
+          setCustomValue(Math.round(hours * 60));
+          setCustomUnit('m');
+        } else {
+          setCustomValue(hours);
+          setCustomUnit('h');
+        }
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Failed to load data', 'err');
     } finally {
@@ -90,8 +109,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => 
   const handleSaveExpiry = async () => {
     setSavingExpiry(true);
     try {
-      await setExpiryHours(expiryHours);
-      showToast(`Global expiry set to ${EXPIRY_OPTIONS.find(o => o.value === expiryHours)?.label}`);
+      let finalHours: number;
+      if (isCustom) {
+        finalHours = customUnit === 'm' ? customValue / 60 : customValue;
+      } else {
+        finalHours = expiryHours;
+      }
+      await setExpiryHours(finalHours);
+      
+      const label = isCustom 
+        ? `${customValue} ${customUnit === 'm' ? 'minutes' : 'hours'}`
+        : EXPIRY_OPTIONS.find(o => Math.abs(o.value - finalHours) < 0.0001)?.label;
+      showToast(`Global expiry set to ${label}`);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Save failed', 'err');
     } finally {
@@ -261,19 +290,69 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => 
         </div>
 
         {/* Global expiry setting */}
-        <div className="admin-settings-row">
+        <div className="admin-settings-row" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.5rem' }}>
           <Settings size={12} />
           <span className="admin-settings-label">Global Expiry Time</span>
           <select
             className="admin-select"
-            value={expiryHours}
-            onChange={e => setExpiryHoursState(Number(e.target.value))}
+            value={isCustom ? 'custom' : expiryHours}
+            onChange={e => {
+              if (e.target.value === 'custom') {
+                setIsCustom(true);
+              } else {
+                setIsCustom(false);
+                setExpiryHoursState(Number(e.target.value));
+              }
+            }}
             aria-label="Set global expiry time"
           >
             {EXPIRY_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
+            <option value="custom">Custom...</option>
           </select>
+
+          {isCustom && (
+            <div className="admin-custom-expiry-inputs" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <input
+                type="number"
+                min={1}
+                max={9999}
+                value={customValue}
+                onChange={e => setCustomValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                className="admin-custom-input"
+                style={{
+                  padding: '0.25rem 0.5rem',
+                  background: 'var(--bg-inset)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  width: '60px',
+                  outline: 'none'
+                }}
+              />
+              <select
+                value={customUnit}
+                onChange={e => setCustomUnit(e.target.value as 'm' | 'h')}
+                className="admin-custom-select"
+                style={{
+                  padding: '0.25rem 0.5rem',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.75rem',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="m">Minutes</option>
+                <option value="h">Hours</option>
+              </select>
+            </div>
+          )}
+
           <button
             type="button"
             className="admin-save-btn"

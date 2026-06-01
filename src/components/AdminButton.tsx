@@ -5,12 +5,7 @@ import { getAdminPassword } from '../lib/admin';
 
 const SESSION_KEY = 'aymnsend_admin';
 
-interface AdminButtonProps {
-  onLogin: () => void;
-  onLogout: () => void;
-}
-
-export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) => {
+export const AdminButton: React.FC = () => {
   const [showLogin, setShowLogin] = useState(false);
   const [showPanel, setShowPanel] = useState(
     () => sessionStorage.getItem(SESSION_KEY) === '1'
@@ -31,7 +26,6 @@ export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) =
         setShowLogin(false);
         setShowPanel(true);
         setPassword('');
-        onLogin();
       } else {
         setError('Access denied. Wrong password.');
         setPassword('');
@@ -50,7 +44,6 @@ export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) =
   const handleLogout = () => {
     setShowPanel(false);
     sessionStorage.removeItem(SESSION_KEY);
-    onLogout();
   };
 
   const closeLogin = () => {
