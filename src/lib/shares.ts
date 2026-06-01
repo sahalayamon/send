@@ -8,7 +8,7 @@ export const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 // Characters used for the 6-char code (a-z + 0-9, case-insensitive)
 const CODE_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789';
-const CODE_LENGTH = 6;
+const CODE_LENGTH = 3;
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ export interface ShareRecord {
 
 // ── Code helpers ───────────────────────────────────────────────────────────
 
-/** Generate a random 6-character alphanumeric code (lowercase). */
+/** Generate a random 3-character alphanumeric code (lowercase). */
 function generateCode(): string {
   let code = '';
   const array = new Uint8Array(CODE_LENGTH);
@@ -40,9 +40,9 @@ function generateCode(): string {
   return code;
 }
 
-/** Validate that a string is a valid 6-char share code. */
+/** Validate that a string is a valid 3-char share code. */
 export function isValidCode(code: string): boolean {
-  return /^[a-z0-9]{6}$/i.test(code);
+  return /^[a-z0-9]{3}$/i.test(code);
 }
 
 // ── Expiry / countdown helpers ─────────────────────────────────────────────
@@ -84,7 +84,11 @@ async function insertWithCode(payload: Record<string, unknown>): Promise<ShareRe
       .select('*')
       .single();
 
-    if (!error) return data as ShareRecord;
+    if (!error) {
+      const record = data as ShareRecord;
+      record.code = record.code.trim();
+      return record;
+    }
     if (error.code === '23505') continue;
     throw new Error(error.message);
   }
@@ -131,16 +135,21 @@ export async function createFileShare(file: File): Promise<ShareRecord> {
 
 // ── Fetch Share ────────────────────────────────────────────────────────────
 
-/** Fetch a share by its 6-char code. Returns null if not found. */
+/** Fetch a share by its 3-char code. Returns null if not found. */
 export async function getShareByCode(code: string): Promise<ShareRecord | null> {
   const { data, error } = await supabase
     .from('shares')
     .select('*')
-    .eq('code', code.toLowerCase())
+    .eq('code', code.toLowerCase().trim())
     .maybeSingle();
 
   if (error) throw new Error(`Failed to fetch share: ${error.message}`);
-  return data as ShareRecord | null;
+  if (data) {
+    const record = data as ShareRecord;
+    record.code = record.code.trim();
+    return record;
+  }
+  return null;
 }
 
 /** Get a just-in-time signed download URL (valid 60 seconds). */

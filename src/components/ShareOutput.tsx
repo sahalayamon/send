@@ -5,9 +5,10 @@ import { EXPIRY_HOURS } from '../lib/shares';
 
 interface ShareOutputProps {
   share: ShareRecord;
+  onReset: () => void;
 }
 
-export const ShareOutput: React.FC<ShareOutputProps> = ({ share }) => {
+export const ShareOutput: React.FC<ShareOutputProps> = ({ share, onReset }) => {
   const [copied, setCopied] = useState(false);
 
   // Clean URL: domain.com/abc123/
@@ -66,6 +67,15 @@ export const ShareOutput: React.FC<ShareOutputProps> = ({ share }) => {
           {share.code.toUpperCase()}
         </code>
       </div>
+
+      <button
+        type="button"
+        onClick={onReset}
+        className="primary-action-btn"
+        style={{ marginTop: '1.25rem', background: 'transparent', color: 'var(--text-secondary)', borderColor: 'var(--border)' }}
+      >
+        &gt; Create Another Share
+      </button>
     </div>
   );
 };

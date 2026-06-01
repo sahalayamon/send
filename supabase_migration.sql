@@ -10,7 +10,7 @@ drop table if exists public.settings cascade;
 -- 1. Create shares table with 6-char code
 create table public.shares (
   id           uuid primary key default gen_random_uuid(),
-  code         char(6) not null unique,
+  code         text not null unique,
   type         text not null check (type in ('text', 'file')),
   content      text,
   storage_path text,

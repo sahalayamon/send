@@ -34,6 +34,11 @@ export const App: React.FC = () => {
   const [viewerError, setViewerError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
 
+  // Retrieval Mode
+  const [retrievalCode, setRetrievalCode] = useState('');
+  const [retrievalError, setRetrievalError] = useState<string | null>(null);
+  const [isRetrieving, setIsRetrieving] = useState(false);
+
   // ── Route resolution ─────────────────────────────────────────────────────
 
   const resolveRoute = async () => {
@@ -63,7 +68,10 @@ export const App: React.FC = () => {
   };
 
   useEffect(() => {
-    resolveRoute();
+    const handleInit = async () => {
+      await resolveRoute();
+    };
+    handleInit();
     window.addEventListener('popstate', resolveRoute);
     return () => window.removeEventListener('popstate', resolveRoute);
   }, []);
@@ -104,7 +112,42 @@ export const App: React.FC = () => {
     setShareRecord(null);
     setTextValue('');
     setFileValue(null);
+    setRetrievalCode('');
+    setRetrievalError(null);
     window.history.pushState({}, '', '/');
+  };
+
+  const handleResetCreator = () => {
+    setShareRecord(null);
+    setTextValue('');
+    setFileValue(null);
+    setUploadError(null);
+    setRetrievalCode('');
+    setRetrievalError(null);
+  };
+
+  const handleRetrieve = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = retrievalCode.trim().toLowerCase();
+    if (!isValidCode(code)) {
+      setRetrievalError('Invalid code. Code must be 3 alphanumeric characters.');
+      return;
+    }
+    setRetrievalError(null);
+    setIsRetrieving(true);
+    try {
+      const record = await getShareByCode(code);
+      if (!record) {
+        setRetrievalError('No share found with this code.');
+      } else {
+        window.history.pushState({}, '', `/${code}/`);
+        resolveRoute();
+      }
+    } catch (err) {
+      setRetrievalError(err instanceof Error ? err.message : 'Error retrieving share.');
+    } finally {
+      setIsRetrieving(false);
+    }
   };
 
   const hasContent = activeTab === 'text' ? textValue.trim() !== '' : fileValue !== null;
@@ -151,8 +194,63 @@ export const App: React.FC = () => {
           </div>
 
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div className="glass-card">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Retrieval Input Card (Separate card at the top) */}
+            <div className="glass-card" style={{ marginBottom: 0 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+                  // Access Shared Content
+                </span>
+                <form onSubmit={handleRetrieve} style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                  <input
+                    type="text"
+                    value={retrievalCode}
+                    onChange={(e) => {
+                      setRetrievalCode(e.target.value.slice(0, 3));
+                      setRetrievalError(null);
+                    }}
+                    placeholder="Enter 3-character code (e.g. a7x)"
+                    style={{
+                      padding: '0.65rem 0.85rem',
+                      border: '1px solid var(--border)',
+                      background: 'var(--bg-inset)',
+                      borderRadius: '0',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'var(--font-mono)',
+                      fontSize: '0.82rem',
+                      outline: 'none',
+                      flex: 1,
+                      height: '38px',
+                      textTransform: 'lowercase'
+                    }}
+                    maxLength={3}
+                    disabled={isRetrieving}
+                  />
+                  <button
+                    type="submit"
+                    className="primary-action-btn"
+                    disabled={retrievalCode.trim().length !== 3 || isRetrieving}
+                    style={{
+                      width: 'auto',
+                      padding: '0 1.5rem',
+                      height: '38px',
+                      marginTop: 0
+                    }}
+                  >
+                    {isRetrieving ? 'Fetching...' : '> Go'}
+                  </button>
+                </form>
+                {retrievalError && (
+                  <div className="capacity-warning" style={{ margin: 0 }}>
+                    <AlertTriangle size={12} />
+                    <span>{retrievalError}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Creator Mode Card */}
+            <div className="glass-card" style={{ marginBottom: 0 }}>
               <TabSelector activeTab={activeTab} onChange={(tab) => {
                 setActiveTab(tab);
                 setShareRecord(null);
@@ -186,8 +284,8 @@ export const App: React.FC = () => {
             </div>
 
             {shareRecord && (
-              <div className="glass-card">
-                <ShareOutput share={shareRecord} />
+              <div className="glass-card" style={{ marginBottom: 0 }}>
+                <ShareOutput share={shareRecord} onReset={handleResetCreator} />
               </div>
             )}
           </div>
