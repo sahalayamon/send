@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Copy, Check, ExternalLink } from 'lucide-react';
 import type { ShareRecord } from '../lib/shares';
-import { EXPIRY_HOURS } from '../lib/shares';
 
 interface ShareOutputProps {
   share: ShareRecord;
@@ -24,11 +23,36 @@ export const ShareOutput: React.FC<ShareOutputProps> = ({ share, onReset }) => {
     }
   };
 
+  // Dynamically calculate chosen expiry duration from record timestamps
+  const getDynamicExpiryLabel = (): string => {
+    try {
+      const created = new Date(share.created_at).getTime();
+      const expires = new Date(share.expires_at).getTime();
+      const diffMs = expires - created;
+      if (isNaN(diffMs) || diffMs <= 0) return 'soon';
+      
+      const diffMins = Math.round(diffMs / 60000);
+      if (diffMins < 60) {
+        return `${diffMins}m`;
+      }
+      
+      const diffHours = Math.round(diffMins / 60);
+      if (diffHours < 24) {
+        return `${diffHours}h`;
+      }
+      
+      const diffDays = Math.round(diffHours / 24);
+      return `${diffDays}d`;
+    } catch {
+      return 'soon';
+    }
+  };
+
   return (
     <div className="share-output-container">
       <div className="share-success-header">
         <span className="share-success-label">// Link generated</span>
-        <span className="share-expiry-note">Expires in {EXPIRY_HOURS}h · stored on Supabase</span>
+        <span className="share-expiry-note">Expires in {getDynamicExpiryLabel()} · stored on Supabase</span>
       </div>
 
       {/* URL row */}

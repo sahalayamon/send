@@ -28,6 +28,11 @@ export const App: React.FC = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Expiry Selection Options
+  const [expiryOption, setExpiryOption] = useState<'5m' | '10m' | '15m' | '1h' | 'custom'>('1h');
+  const [customExpiryValue, setCustomExpiryValue] = useState<number>(30);
+  const [customExpiryUnit, setCustomExpiryUnit] = useState<'m' | 'h'>('m');
+
   // Viewer Mode
   const [viewShare, setViewShare] = useState<ShareRecord | null>(null);
   const [viewerLoading, setViewerLoading] = useState(false);
@@ -78,6 +83,21 @@ export const App: React.FC = () => {
 
   // ── Upload handler ───────────────────────────────────────────────────────
 
+  const getExpiryMinutes = (): number => {
+    switch (expiryOption) {
+      case '5m': return 5;
+      case '10m': return 10;
+      case '15m': return 15;
+      case '1h': return 60;
+      case 'custom':
+        if (customExpiryUnit === 'h') {
+          return customExpiryValue * 60;
+        }
+        return customExpiryValue;
+      default: return 60;
+    }
+  };
+
   const handleGenerateShare = async () => {
     setIsUploading(true);
     setUploadError(null);
@@ -85,12 +105,13 @@ export const App: React.FC = () => {
 
     try {
       let record: ShareRecord;
+      const minutes = getExpiryMinutes();
       if (activeTab === 'text') {
         if (!textValue.trim()) return;
-        record = await createTextShare(textValue);
+        record = await createTextShare(textValue, minutes);
       } else {
         if (!fileValue) return;
-        record = await createFileShare(fileValue);
+        record = await createFileShare(fileValue, minutes);
       }
       setShareRecord(record);
       setTimeout(() => {
@@ -263,8 +284,80 @@ export const App: React.FC = () => {
                 <FileShare value={fileValue} onChange={(val) => { setFileValue(val); setShareRecord(null); }} />
               )}
 
+              {/* Expiry Lifetime Selector */}
+              <div className="expiry-section" style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.25rem' }}>
+                <span className="expiry-title-label" style={{ display: 'block', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', marginBottom: '0.75rem' }}>
+                  // Expiry Link Lifetime
+                </span>
+                <div className="expiry-options" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {(['5m', '10m', '15m', '1h', 'custom'] as const).map((opt) => (
+                    <button
+                      key={opt}
+                      type="button"
+                      className={`expiry-btn ${expiryOption === opt ? 'active' : ''}`}
+                      onClick={() => setExpiryOption(opt)}
+                      style={{
+                        background: expiryOption === opt ? 'var(--text-primary)' : 'transparent',
+                        color: expiryOption === opt ? 'var(--bg)' : 'var(--text-secondary)',
+                        border: '1px solid ' + (expiryOption === opt ? 'var(--text-primary)' : 'var(--border-tag)'),
+                        padding: '0.4rem 0.8rem',
+                        fontSize: '0.72rem',
+                        fontFamily: 'var(--font-mono)',
+                        textTransform: 'uppercase',
+                        cursor: 'pointer',
+                        letterSpacing: '0.06em',
+                        transition: 'all var(--transition)'
+                      }}
+                    >
+                      {opt === 'custom' ? 'Custom' : opt}
+                    </button>
+                  ))}
+                </div>
+
+                {expiryOption === 'custom' && (
+                  <div className="expiry-custom-row" style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                    <input
+                      type="number"
+                      min={1}
+                      max={9999}
+                      value={customExpiryValue}
+                      onChange={(e) => setCustomExpiryValue(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                      className="expiry-custom-input"
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        background: 'var(--bg-inset)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.82rem',
+                        width: '80px',
+                        outline: 'none'
+                      }}
+                    />
+                    <select
+                      value={customExpiryUnit}
+                      onChange={(e) => setCustomExpiryUnit(e.target.value as 'm' | 'h')}
+                      className="expiry-custom-select"
+                      style={{
+                        padding: '0.5rem 0.75rem',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.82rem',
+                        outline: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="m">Minutes</option>
+                      <option value="h">Hours</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
               {uploadError && (
-                <div className="capacity-warning" style={{ marginTop: '1rem' }}>
+                <div className="capacity-warning" style={{ marginTop: '1.25rem' }}>
                   <AlertTriangle size={12} />
                   <span>{uploadError}</span>
                 </div>
@@ -294,10 +387,10 @@ export const App: React.FC = () => {
 
       <footer className="app-footer">
         <div className="footer-links">
-          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('Files uploaded to Supabase. Links expire after 1 hour. Nothing stored in the URL.'); }}>How it works</a>
-          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('AYMN.SEND. uses Supabase (PostgreSQL + Storage). Files deleted after expiry. No analytics.'); }}>Privacy & Tech</a>
+          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('Files uploaded to Supabase. Links expire after the selected duration. Nothing stored in the URL.'); }}>How it works</a>
+          <a href="/" className="footer-link" onClick={(e) => { e.preventDefault(); alert('AymnSend uses Supabase (PostgreSQL + Storage). Files deleted after expiry. No analytics.'); }}>Privacy & Tech</a>
         </div>
-        <p>© {new Date().getFullYear()} AYMN.SEND. — Links expire in 1h. Zero tracking.</p>
+        <p>© {new Date().getFullYear()} AymnSend — Links expire based on selected duration. Zero tracking.</p>
       </footer>
       <AdminButton />
     </div>

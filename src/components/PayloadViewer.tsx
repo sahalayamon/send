@@ -109,7 +109,7 @@ export const PayloadViewer: React.FC<PayloadViewerProps> = ({ share, onClear }) 
         <div className="expired-content">
           <h2 className="expired-title">Link Expired</h2>
           <p className="expired-message">
-            This link has no data. AYMN.SEND. links are only available for 1 hour after creation.
+            This link has no data. AymnSend links are only available for a limited time after creation.
           </p>
           <div className="expired-meta">
             <span>Share ID: <code>{share.id}</code></span>

@@ -4,7 +4,7 @@ export const Header: React.FC = () => {
   return (
     <header className="app-header">
       <div className="logo-container">
-        <h1 className="logo-text">AYMN.SEND.</h1>
+        <h1 className="logo-text">AymnSend</h1>
       </div>
 
       <div className="badge-glow">
@@ -13,7 +13,7 @@ export const Header: React.FC = () => {
 
       <p className="app-description">
         Share text snippets or any file via a short link. Stored securely on Supabase.
-        Link expires in 1 hour. Your data is never tracked.
+        Link expires based on your custom lifetime selection. Your data is never tracked.
       </p>
     </header>
   );

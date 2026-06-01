@@ -47,12 +47,28 @@ export function isValidCode(code: string): boolean {
 
 // ── Expiry / countdown helpers ─────────────────────────────────────────────
 
+/** Parse a date string robustly, ensuring timezone specifiers (like Z for UTC) are present */
+export function parseExpiryDate(dateStr: string): Date {
+  if (!dateStr) return new Date();
+  
+  // Replace spaces with 'T' to ensure standard ISO parsing
+  let cleaned = dateStr.trim().replace(' ', 'T');
+  
+  // If there's no timezone offset (+/-HH:MM) or 'Z' at the end, append 'Z' to treat as UTC
+  if (!cleaned.endsWith('Z') && !/[+-]\d{2}:?\d{2}$/.test(cleaned)) {
+    cleaned += 'Z';
+  }
+  
+  const parsed = new Date(cleaned);
+  return isNaN(parsed.getTime()) ? new Date(dateStr) : parsed;
+}
+
 export function isExpired(record: ShareRecord): boolean {
-  return new Date(record.expires_at) <= new Date();
+  return parseExpiryDate(record.expires_at) <= new Date();
 }
 
 export function secondsRemaining(record: ShareRecord): number {
-  return Math.max(0, Math.floor((new Date(record.expires_at).getTime() - Date.now()) / 1000));
+  return Math.max(0, Math.floor((parseExpiryDate(record.expires_at).getTime() - Date.now()) / 1000));
 }
 
 export function formatCountdown(seconds: number): string {
@@ -72,9 +88,14 @@ export function formatFileSize(bytes: number): string {
 // ── Create Shares ──────────────────────────────────────────────────────────
 
 /** Try inserting with a unique code, retrying up to 5 times on collision. */
-async function insertWithCode(payload: Record<string, unknown>): Promise<ShareRecord> {
-  const expiryHours = await getCachedExpiryHours();
-  const expires_at = new Date(Date.now() + expiryHours * 3600 * 1000).toISOString();
+async function insertWithCode(payload: Record<string, unknown>, expiryMinutes?: number): Promise<ShareRecord> {
+  let expires_at: string;
+  if (expiryMinutes && expiryMinutes > 0) {
+    expires_at = new Date(Date.now() + expiryMinutes * 60 * 1000).toISOString();
+  } else {
+    const expiryHours = await getCachedExpiryHours();
+    expires_at = new Date(Date.now() + expiryHours * 3600 * 1000).toISOString();
+  }
 
   for (let attempt = 0; attempt < 5; attempt++) {
     const code = generateCode();
@@ -96,12 +117,12 @@ async function insertWithCode(payload: Record<string, unknown>): Promise<ShareRe
 }
 
 /** Upload a text snippet to Supabase. Returns the full share record. */
-export async function createTextShare(text: string): Promise<ShareRecord> {
-  return insertWithCode({ type: 'text', content: text });
+export async function createTextShare(text: string, expiryMinutes?: number): Promise<ShareRecord> {
+  return insertWithCode({ type: 'text', content: text }, expiryMinutes);
 }
 
 /** Upload any file to Supabase Storage and create a share record. */
-export async function createFileShare(file: File): Promise<ShareRecord> {
+export async function createFileShare(file: File, expiryMinutes?: number): Promise<ShareRecord> {
   if (file.size > MAX_FILE_SIZE_BYTES) {
     throw new Error(`File exceeds the ${MAX_FILE_SIZE_MB}MB size limit.`);
   }
@@ -125,7 +146,7 @@ export async function createFileShare(file: File): Promise<ShareRecord> {
       filename: file.name,
       mime_type: file.type || 'application/octet-stream',
       file_size: file.size,
-    });
+    }, expiryMinutes);
   } catch (err) {
     // Clean up orphaned file if DB insert fails
     await supabase.storage.from(STORAGE_BUCKET).remove([storagePath]);
