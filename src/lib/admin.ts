@@ -18,7 +18,7 @@ export async function getExpiryHours(): Promise<number> {
     .select('value')
     .eq('key', 'expiry_hours')
     .single();
-  return data ? parseInt(data.value, 10) : 1;
+  return data ? parseFloat(data.value) || 1 : 1;
 }
 
 export async function setExpiryHours(hours: number): Promise<void> {
