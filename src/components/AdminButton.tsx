@@ -45,6 +45,10 @@ export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) =
 
   const handleClose = () => {
     setShowPanel(false);
+  };
+
+  const handleLogout = () => {
+    setShowPanel(false);
     sessionStorage.removeItem(SESSION_KEY);
     onLogout();
   };
@@ -61,10 +65,20 @@ export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) =
       {!showPanel && (
         <button
           type="button"
-          className="admin-trigger-btn"
-          onClick={() => setShowLogin(true)}
-          title="Admin access"
+          className={`admin-trigger-btn ${sessionStorage.getItem(SESSION_KEY) === '1' ? 'admin-trigger-btn--active' : ''}`}
+          onClick={() => {
+            if (sessionStorage.getItem(SESSION_KEY) === '1') {
+              setShowPanel(true);
+            } else {
+              setShowLogin(true);
+            }
+          }}
+          title={sessionStorage.getItem(SESSION_KEY) === '1' ? "Open Admin Panel" : "Admin access"}
           aria-label="Open admin panel"
+          style={{
+            borderColor: sessionStorage.getItem(SESSION_KEY) === '1' ? 'var(--success)' : 'var(--border)',
+            color: sessionStorage.getItem(SESSION_KEY) === '1' ? 'var(--success)' : 'var(--text-secondary)'
+          }}
         >
           <Terminal size={14} />
         </button>
@@ -129,7 +143,7 @@ export const AdminButton: React.FC<AdminButtonProps> = ({ onLogin, onLogout }) =
       )}
 
       {/* Admin panel */}
-      {showPanel && <AdminPanel onClose={handleClose} />}
+      {showPanel && <AdminPanel onClose={handleClose} onLogout={handleLogout} />}
     </>
   );
 };

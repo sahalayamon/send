@@ -12,9 +12,13 @@ import {
 
 interface AdminPanelProps {
   onClose: () => void;
+  onLogout: () => void;
 }
 
 const EXPIRY_OPTIONS = [
+  { label: '5 minutes',  value: 5 / 60 },
+  { label: '10 minutes', value: 10 / 60 },
+  { label: '15 minutes', value: 15 / 60 },
   { label: '30 minutes', value: 0.5 },
   { label: '1 hour',     value: 1 },
   { label: '2 hours',    value: 2 },
@@ -23,7 +27,7 @@ const EXPIRY_OPTIONS = [
   { label: '24 hours',   value: 24 },
 ];
 
-export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
+export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
   const [shares, setShares] = useState<ShareRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -145,6 +149,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ onClose }) => {
               aria-label="Change admin password"
             >
               Change Password
+            </button>
+            <button
+              type="button"
+              className="admin-header-text-btn"
+              onClick={onLogout}
+              title="Logout session"
+              aria-label="Logout"
+              style={{ color: 'var(--error)', borderColor: 'var(--error)', marginRight: '0.25rem' }}
+            >
+              Logout
             </button>
             <button
               type="button"
